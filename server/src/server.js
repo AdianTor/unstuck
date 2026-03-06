@@ -3,7 +3,7 @@ const pool = require('./config/db');
 require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8080;
 
 app.use(express.json());
 
@@ -15,8 +15,7 @@ app.get('/', (req, res) => {
 // Retreive users upon call from frontend (will not work until db is set up)
 app.get('/users', async (req, res) => {
 	try {
-		const [rows, fields] = await pool.query('SELECT * FROM users');
-    
+		const { rows } = await pool.query('SELECT * FROM Inquiries');
 		res.json(rows);
 	} catch (error) {
 		console.error(error);
@@ -25,6 +24,6 @@ app.get('/users', async (req, res) => {
 });
 
 // Start the server
-app.listen(port, () => {
-	console.log(`Server is running on http://localhost:${port}`);
+app.listen(port, "0.0.0.0", () => {
+	console.log(`Server is running on http://0.0.0.0:${port}`);
 });
