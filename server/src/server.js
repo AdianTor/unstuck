@@ -14,14 +14,12 @@ get_resources()
 app.get('/', (req, res) => { res.send('Backend server is running!'); });
 app.listen(port, "0.0.0.0", () => { console.log(`Server is running on http://0.0.0.0:${port}`); });
 
-
-
 // == Server Functions ==
 
 // Database -> frontend
 function get_resources() {
 	resources.forEach((resource) => {
-		app.get(`/${resource}`, async (req, res) => {
+		app.get(`/api/${resource}`, async (req, res) => {
 			try {
 				const { rows } = await pool.query(`SELECT * FROM ${resource}`);
 				res.json(rows);
