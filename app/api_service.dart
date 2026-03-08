@@ -3,7 +3,7 @@ import 'dart:convert';
 
 class ApiService {
   //main server URL on Fly.io
-  final String baseUrl = 'https://unstuck.fly.dev';
+  final String baseUrl = 'https://unstuck.fly.dev/api';
 
   //Check if server is running
   Future<bool> checkServer() async {
@@ -14,6 +14,8 @@ class ApiService {
       return false;
     }
   }
+
+  // == Read from the DB ==
 
   //Get all inquiries from database
   Future<List> getInquiries() async {
@@ -42,22 +44,53 @@ class ApiService {
       return [];
     }
   }
+  
+  //== New entry to DB ==
 
-  //POST - Send an inquiry to the database
-  Future<bool> sentInquiry(String title, String description) async {
+  //POST - Add an inquiry to the database
+  Future<bool> addInquiry(String title, String body) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/create-entry'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'resource': 'inquiries',
+        'data': {
+          'body': body, 
+		  'title': title, 
+          'chosen_answer_id': null, 
+          'is_solved': false,
+        },
+      }),
+    );
+    
+    return response.statusCode == 200;
+  } catch (e) {
+    print('Error: $e');
+    return false;
+  }
+}
+
+  //POST - Add an answer to the db
+  Future<bool> addAnswer(int inquiryId, String answerText) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/inquiries'),
+        Uri.parse('$baseUrl/create-entry'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'title': title,
-          'description': description,
+          'resource': 'answers',
+          'data': {
+            'inquiry_id': inquiryId,
+            'body': answerText,
+          },
         }),
       );
+    
       return response.statusCode == 200;
     } catch (e) {
-      print('Error: $e');
+      print('Error sending answer: $e');
       return false;
     }
   }
+
 }
