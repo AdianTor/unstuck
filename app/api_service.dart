@@ -72,7 +72,7 @@ class ApiService {
 }
 
   //POST - Add an answer to the db
-  Future<bool> sendAnswer(int inquiryId, String answerText) async {
+  Future<bool> addAnswer(int inquiryId, String answerText) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/create-entry'),
