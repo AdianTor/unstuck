@@ -36,14 +36,14 @@ class _LoginPageState extends State<LoginPage> {
     setState(() { _isLoading = true; });
     
     if (isLogin) {
-      String? loggedInUser = await api.loginUser(username, password);
+      final userData = await api.loginUser(username, password);
       setState(() { _isLoading = false; });
       
-      if (loggedInUser != null) {
+      if (userData != null) {
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomePage(username: loggedInUser)),
+          MaterialPageRoute(builder: (context) => HomePage(username: userData['username'], userId: userData['userId'],)),
         );
       } else {
         if (!mounted) return;
@@ -130,15 +130,28 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => const HomePage(username: 'Guest')),
-                      );
-                    },
-                    child: const Text('Continue as guest'),
-                  ),
+                  child: SizedBox (
+					width: double.infinity,
+					child: OutlinedButton(
+						onPressed: () async {
+							setState(() {_isLoading = true; });
+							final guestData = await api.loginGuest();
+							setState(() {_isLoading = false; });
+							
+							if (guestData != null && mounted) {
+								Navigator.pushReplacement(
+									context,
+									MaterialPageRoute(builder: (context) => HomePage(username: guestData['username'], userId: guestData['userId'],)),
+								);
+							} else  if (mounted) {
+								ScaffoldMessenger.of(context).showSnackBar(
+									const SnackBar(content: Text('Could not create guest account')),
+								);
+							}
+						},
+						child: const Text('Continue as guest'),
+					),
+				  ),
                 ),
               ],
             ],

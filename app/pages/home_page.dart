@@ -5,7 +5,8 @@ import 'login_page.dart';
 
 class HomePage extends StatefulWidget {
   final String username;
-  const HomePage({super.key, required this.username});
+  final String userId;
+  const HomePage({super.key, required this.username, required this.userId});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -13,8 +14,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final ApiService api = ApiService();
-  List inquiries = [];
-  List answers = [];
+  List boardData = [];
 
   @override
   void initState() {
@@ -23,17 +23,45 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> loadData() async {
-    List inqData = await api.getInquiries();
-    List ansData = await api.getAnswers();
+    List data = await api.getBoard();
     setState(() {
-      inquiries = inqData;
-      answers = ansData;
+      boardData = data;
     });
   }
-
-  List getAnswersForInquiry(int inquiryId) {
-    return answers.where((a) => a['inquiry_id'] == inquiryId).toList();
-  }
+  
+  Future<void> _showAnswerDialog(int inquiryId) async {
+	TextEditingController answerController = TextEditingController();
+	return showDialog(
+		context: context,
+		builder: (context) {
+			return AlertDialog(
+				title: const Text('Add Answer'),
+				content: TextField(
+					controller: answerController,
+					decoration: const InputDecoration(hintText: 'Type your answer here...'),
+					maxLines: 3,
+				),
+				actions: [
+					TextButton(
+						onPressed: () => Navigator.pop(context),
+						child: const Text('Cancel'),
+					),
+					ElevatedButton(
+						onPressed: () async {
+							if (answerController.text.trim().isNotEmpty) {
+								await api.addAnswer(inquiryId, answerController.text, widget.userId);
+								if (!mounted) return;
+								Navigator.pop(context);
+								loadData();
+							}
+						},
+						child: const Text('Submit'),
+					),
+				],
+			);
+		},
+	);
+}
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +110,13 @@ class _HomePageState extends State<HomePage> {
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('Sign out'),
-              onTap: () {
+              onTap: () async {
+				if (widget.username.startsWith('Guest_')) { //TODO: include better condition... what if someone made their username this?
+					await api.deleteGuest(widget.username);
+				}
+				
+				if (!mounted) return;
+			  
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -94,10 +128,11 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       body: ListView.builder(
-        itemCount: inquiries.length,
+        itemCount: boardData.length,
         itemBuilder: (context, index) {
-          final item = inquiries[index];
-          final inquiryAnswers = getAnswersForInquiry(item['inquiry_id']);
+          final item = boardData[index];
+          final answers = item['answers'] as List? ?? [];
+		  
           return Card(
             margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Padding(
@@ -106,8 +141,11 @@ class _HomePageState extends State<HomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+					mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const CircleAvatar(
+					 Row(
+					  children: [
+                       const CircleAvatar(
                         radius: 16,
                         child: Icon(Icons.person, size: 16),
                       ),
@@ -118,14 +156,24 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ],
                   ),
+				  IconButton(
+					icon: const Icon(Icons.reply),
+					tooltip: 'Reply to question',
+					onPressed: () {
+						_showAnswerDialog(item['inquiry_id']);
+					},
+				   ),
+				  ],
+				 ),
+				  
                   const SizedBox(height: 4),
                   Text(item['body'] ?? ''),
-                  if (inquiryAnswers.isNotEmpty) ...[
+                  if (answers.isNotEmpty) ...[
                     const Divider(),
                     const Text('Answers:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    ...inquiryAnswers.map((answer) => Padding(
+                    ...answers.map((answer) => Padding(
                       padding: const EdgeInsets.only(top: 4, left: 8),
-                      child: Text('• ${answer['body']}'),
+                      child: Text('• ${answer['username'] ?? 'Unknown'}: ${answer['body']}'),
                     )),
                   ],
                 ],
@@ -135,11 +183,13 @@ class _HomePageState extends State<HomePage> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AskPage()),
           );
+		  
+		  loadData();
         },
         child: const Icon(Icons.add),
       ),

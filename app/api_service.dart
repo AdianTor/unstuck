@@ -34,7 +34,7 @@ class ApiService {
     }
   }
 
-  Future<String?> loginUser(String username, String password) async {
+  Future<Map<String, dynamic>?> loginUser(String username, String password) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/login'),
@@ -46,7 +46,10 @@ class ApiService {
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['user']['username'];
+        return {
+			'username': data['user']['username'],
+			'userId': data['user']['id'],
+		};
       }
       return null;
     } catch (e) {
@@ -54,8 +57,38 @@ class ApiService {
       return null;
     }
   }
+  
+  Future<Map<String, dynamic>?> loginGuest() async {
+		try {			
+			final response = await http.post(Uri.parse('$baseUrl/login-guest'));
+			if (response.statusCode == 200) {
+				final data = jsonDecode(response.body);
+				return {
+					'username': data['username'],
+					'userId': data['user_id'],
+				};
+			}
+			
+			return null;
+		} catch (e) {
+			print('Login error: $e');
+			return null;
+		}
+	}
+	
+	Future<void> deleteGuest(String username) async {
+		try {
+			await http.delete(
+				Uri.parse('$baseUrl/delete-guest'),
+				headers: {'Content-Type' : 'application/json'},
+				body: jsonEncode({'username': username}),
+			);
+		} catch (e) {
+			print('Error deleting guest: $e');
+		}
+	}
 
-  // == Read from the DB ==
+  // == Get Inquiry Data ==
 
   //Get all inquiries from database
   Future<List> getInquiries() async {
@@ -84,8 +117,22 @@ class ApiService {
       return [];
     }
   }
-
-  //== New entry to DB ==
+  
+  //Get question + all answers to question
+  Future<List> getBoard() async {
+	try {
+		final response = await http.get(Uri.parse('$baseUrl/board'));
+		if (response.statusCode == 200) {
+			return jsonDecode(response.body);
+		}
+		return [];
+    } catch (e) {
+		print('Connection error: $e');
+		return [];
+    }
+  }
+  
+  // = Edit Inquiry Data =
 
   //POST - Add an inquiry to the database
   Future<bool> addInquiry(String title, String body) async {
@@ -98,7 +145,6 @@ class ApiService {
           'data': {
             'body': body,
             'title': title,
-            'chosen_answer_id': null,
             'is_solved': false,
           },
         }),
@@ -111,7 +157,7 @@ class ApiService {
   }
 
   //POST - Add an answer to the db
-  Future<bool> addAnswer(int inquiryId, String answerText) async {
+  Future<bool> addAnswer(int inquiryId, String answerText, String userId) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/create-entry'),
@@ -121,6 +167,7 @@ class ApiService {
           'data': {
             'inquiry_id': inquiryId,
             'body': answerText,
+			'user_id': userId
           },
         }),
       );
