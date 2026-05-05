@@ -5,7 +5,10 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
 class AskPage extends StatefulWidget {
-  const AskPage({super.key});
+  final String userId;
+  final String username;
+  const AskPage({super.key, required this.userId, required this.username});
+
   @override
   State<AskPage> createState() => _AskPageState();
 }
@@ -34,6 +37,7 @@ class _AskPageState extends State<AskPage> {
     bool success = await api.addInquiry(
       _titleController.text,
       _bodyController.text,
+      widget.userId,
     );
 
     if (success) {
@@ -92,7 +96,6 @@ class _AskPageState extends State<AskPage> {
               ),
             ),
             const SizedBox(height: 24),
-            // Capture Image button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -101,14 +104,12 @@ class _AskPageState extends State<AskPage> {
               ),
             ),
             const SizedBox(height: 16),
-            // Display the captured image if it exists
             if (_imageFile != null)
               Image.file(
                 _imageFile!,
                 height: 150.0,
               ),
             const SizedBox(height: 24),
-            // Upload button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
