@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../api_service.dart';
 import 'home_page.dart';
+import 'mechanic.dart';
 import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -40,15 +41,25 @@ class _LoginPageState extends State<LoginPage> {
     setState(() { _isLoading = false; });
     
     if (userData != null) {
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage(
-          username: userData['username'],
-          userId: userData['userId'],
-        )),
-      );
-    } else {
+  if (!mounted) return;
+  if (userData['isMechanic'] == true) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => MechanicHomePage(
+        username: userData['username'],
+        userId: userData['userId'],
+      )),
+    );
+  } else {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => HomePage(
+        username: userData['username'],
+        userId: userData['userId'],
+      )),
+    );
+  }
+}else {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Login failed')),

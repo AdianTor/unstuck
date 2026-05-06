@@ -49,6 +49,7 @@ class ApiService {
         return {
           'username': data['user']['username'],
           'userId': data['user']['id'],
+          'isMechanic': data['user']['is_mechanic'],
         };
       }
       return null;
